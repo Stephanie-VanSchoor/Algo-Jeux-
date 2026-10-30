@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AlgoLearn</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
+body{background:linear-gradient(135deg,#0a0618,#1e1b4b);color:#e9d5ff;min-height:100vh;line-height:1.6}
+header{background:rgba(15,10,31,.95);border-bottom:1px solid #4c1d95;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:12px}
+header h1{font-size:1.4rem;color:#f0abfc}
+.header-stats{display:flex;gap:10px;flex-wrap:wrap}
+.stat-chip{background:#1a1333;border:1px solid #4c1d95;border-radius:20px;padding:6px 14px;font-size:.82rem}
+.stat-chip b{color:#fbbf24}
+.container{max-width:1100px;margin:0 auto;padding:24px}
+.view{display:none}.view.active{display:block}
+.home-intro{text-align:center;margin-bottom:30px}
+.home-intro h2{font-size:1.9rem;margin-bottom:8px;color:#f0abfc}
+.home-intro p{color:#a78bfa;max-width:600px;margin:auto}
+.modules-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px}
+.module-card{background:#1a1333;border:1px solid #4c1d95;border-radius:18px;padding:20px;cursor:pointer;transition:.2s;position:relative}
+.module-card:hover{transform:translateY(-3px);border-color:#a855f7}
+.module-card.locked{opacity:.45;cursor:not-allowed}
+.module-card.locked:hover{transform:none}
+.module-card.completed{border-color:#10b981}
+.module-card .mod-icon{font-size:2.3rem;margin-bottom:8px}
+.module-card h3{color:#f0abfc;font-size:1.1rem;margin-bottom:4px}
+.module-card .mod-desc{font-size:.83rem;color:#a78bfa;margin-bottom:10px}
+.mod-badge{display:inline-block;padding:4px 10px;border-radius:12px;font-size:.7rem;font-weight:700}
+.mod-badge.todo{background:#4c1d95;color:#c4b5fd}
+.mod-badge.done{background:#065f46;color:#a7f3d0}
+.mod-badge.locked{background:#1f2937;color:#9ca3af}
+.mod-progress{margin-top:10px;height:6px;background:#0f0a1f;border-radius:3px;overflow:hidden}
+.mod-progress-bar{height:100%;background:linear-gradient(90deg,#8b5cf6,#d946ef);transition:.4s}
+.lock-overlay{position:absolute;top:10px;right:10px;font-size:1.3rem}
+.back-btn{background:#1a1333;border:1px solid #4c1d95;color:#e9d5ff;padding:8px 16px;border-radius:20px;cursor:pointer;font-size:.9rem;margin-bottom:18px}
+.lesson-header{margin-bottom:18px}
+.lesson-header h2{font-size:1.7rem;color:#f0abfc}
+.lesson-header .subtitle{color:#a78bfa;font-size:.92rem}
+.tabs{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+.tab{padding:10px 18px;background:#1a1333;border:1px solid #4c1d95;border-radius:12px;cursor:pointer;font-size:.88rem;font-weight:600;color:#a78bfa}
+.tab.active{background:linear-gradient(135deg,#8b5cf6,#d946ef);color:#fff;border-color:transparent}
+.tab-content{display:none}.tab-content.active{display:block}
+.theory-box{background:#1a1333;border-radius:14px;padding:22px;border-left:4px solid #a855f7;margin-bottom:14px}
+.theory-box h3{color:#fbbf24;margin-bottom:8px}
+.theory-box p{margin-bottom:8px;line-height:1.7}
+.theory-box ul{margin-left:20px;margin-bottom:8px}
+.complexity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:10px}
+.complexity-card{background:#0f0a1f;padding:12px;border-radius:10px;text-align:center;border:1px solid #4c1d95}
+.complexity-card .lbl{font-size:.72rem;color:#a78bfa;text-transform:uppercase}
+.complexity-card .val{font-size:1.2rem;font-weight:800;color:#fbbf24;margin-top:4px}
+.pseudo-code{background:#0a0618;padding:16px;border-radius:10px;font-family:monospace;font-size:.83rem;line-height:1.8;border:1px solid #4c1d95;overflow-x:auto;white-space:pre-wrap}
+.playground{background:#1a1333;border-radius:14px;padding:22px;border:1px solid #4c1d95}
+.playground-controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+button{background:linear-gradient(135deg,#8b5cf6,#d946ef);border:none;color:#fff;font-weight:700;padding:10px 18px;border-radius:20px;cursor:pointer;font-size:.88rem}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.sec{background:#221a3d;border:1px solid #4c1d95;color:#e9d5ff}
+.bars{display:flex;align-items:flex-end;gap:6px;height:140px;justify-content:center;padding:10px 0}
+.bar{width:36px;border-radius:6px 6px 2px 2px;background:linear-gradient(to top,#7c3aed,#c084fc);display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;font-weight:700;font-size:.8rem;color:#fff;transition:all .25s}
+.bar.cmp{background:linear-gradient(to top,#f59e0b,#fbbf24);box-shadow:0 0 12px #fbbf24}
+.bar.sorted{background:linear-gradient(to top,#059669,#34d399)}
+.bar.pivot{background:linear-gradient(to top,#ef4444,#f87171)}
+.explain{background:#0f0a1f;border:1px solid #4c1d95;border-radius:10px;padding:14px 18px;margin:12px 0;min-height:56px;font-size:.9rem}
+.explain .key{color:#fbbf24;font-weight:700}
+.explain .ok{color:#10b981;font-weight:700}
+.explain .warn{color:#ef4444;font-weight:700}
+.quiz-container{background:#1a1333;border-radius:14px;padding:22px;border:2px solid #a855f7}
+.quiz-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+.quiz-header h3{color:#fbbf24}
+.quiz-progress{background:#0f0a1f;padding:6px 14px;border-radius:20px;font-size:.82rem;font-weight:700}
+.quiz-question{font-size:1.02rem;margin-bottom:14px}
+.quiz-option{display:block;width:100%;text-align:left;margin:8px 0;padding:12px 16px;border-radius:10px;background:#0f0a1f;color:#e9d5ff;border:1px solid #4c1d95;cursor:pointer;font-size:.92rem}
+.quiz-option:hover:not(:disabled){background:#221a3d;border-color:#a855f7}
+.quiz-option.correct{background:#065f46;border-color:#10b981;color:#a7f3d0}
+.quiz-option.wrong{background:#7f1d1d;border-color:#ef4444;color:#fecaca}
+.quiz-feedback{margin-top:12px;padding:12px;border-radius:10px;font-size:.88rem;display:none}
+.quiz-feedback.show{display:block}
+.quiz-feedback.good{background:#065f46;color:#a7f3d0}
+.quiz-feedback.bad{background:#7f1d1d;color:#fecaca}
+.quiz-actions{margin-top:14px;display:flex;gap:10px}
+.quiz-result{text-align:center;padding:26px}
+.quiz-result .score-big{font-size:3.8rem;font-weight:800;color:#c084fc}
+.quiz-result .msg{font-size:1.05rem;margin:12px 0;color:#a78bfa}
+.big-progress{background:#1a1333;border-radius:14px;padding:18px;margin-bottom:22px;border:1px solid #4c1d95}
+.big-progress h3{color:#f0abfc;margin-bottom:8px}
+.big-progress-bar{height:14px;background:#0f0a1f;border-radius:7px;overflow:hidden;margin-top:8px}
+.big-progress-fill{height:100%;background:linear-gradient(90deg,#8b5cf6,#d946ef,#f0abfc);transition:.5s}
+.badges-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.badge-item{background:#0f0a1f;border:1px solid #4c1d95;padding:6px 12px;border-radius:16px;font-size:.8rem}
+.badge-item.earned{border-color:#fbbf24}
+input[type=number],input[type=text]{flex:1;padding:11px 16px;border-radius:20px;background:#0f0a1f;color:#f0abfc;border:2px solid #4c1d95;font-size:.95rem;font-weight:700;outline:none;min-width:0}
+.input-row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+.range-bar{height:34px;background:#0f0a1f;border-radius:17px;position:relative;margin:12px 0;border:1px solid #4c1d95;overflow:hidden}
+.range-active{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,#7c3aed,#d946ef);display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700}
+.fib-row{display:flex;gap:6px;justify-content:center;margin:14px 0;flex-wrap:wrap}
+.fib-box{background:#0f0a1f;border:2px solid #4c1d95;border-radius:10px;padding:10px 14px;min-width:56px;text-align:center;font-weight:800;font-size:1.05rem;color:#c084fc}
+.fib-box.new{border-color:#fbbf24;color:#fbbf24}
+.fib-box.op1{border-color:#10b981;color:#10b981}
+.fib-box.op2{border-color:#60a5fa;color:#60a5fa}
+.formula{text-align:center;padding:14px;background:#0f0a1f;border-radius:10px;font-family:monospace;font-size:1rem;margin:12px 0}
+.algo-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.88rem}
+.algo-table th,.algo-table td{padding:10px 12px;text-align:left;border-bottom:1px solid #4c1d95}
+.algo-table th{color:#fbbf24}
+.toast{position:fixed;bottom:20px;right:20px;background:#1a1333;border:2px solid #fbbf24;padding:14px 20px;border-radius:12px;color:#e9d5ff;font-weight:600;transform:translateY(200%);transition:.4s;z-index:1000;max-width:300px}
+.toast.show{transform:translateY(0)}
+</style>
+</head>
+<body>
+<header>
+<h1>🎓 AlgoLearn</h1>
+<div class="header-stats">
+<div class="stat-chip">⭐ <b id="hdrPoints">0</b> pts</div>
+<div class="stat-chip">🏆 <b id="hdrBadges">0</b>/8</div>
+<div class="stat-chip">📚 <b id="hdrModules">0</b>/6</div>
+<button onclick="unlockAll()" style="font-size:.72rem;padding:6px 12px">🔓 Tout débloquer</button>
+</div>
+</header>
+<div class="container">
+<div class="view active" id="view-home">
+<div class="home-intro">
+<h2>Bienvenue sur AlgoLearn 🚀</h2>
+<p>Cours, exercices interactifs et quiz pour maîtriser les algorithmes.</p>
+</div>
+<div class="big-progress">
+<h3>📊 Ta progression</h3>
+<div style="display:flex;justify-content:space-between;margin-top:6px;font-size:.88rem">
+<span id="bigProgressLabel">0% complété</span>
+<span id="bigProgressPoints">0 points</span>
+</div>
+<div class="big-progress-bar"><div class="big-progress-fill" id="bigProgressFill" style="width:0%"></div></div>
+<div class="badges-row" id="badgesRow"></div>
+</div>
+<div class="modules-grid" id="modulesGrid"></div>
+</div>
+<div class="view" id="view-module">
+<button class="back-btn" onclick="goHome()">← Retour</button>
+<div class="lesson-header"><h2 id="modTitle"></h2><p class="subtitle" id="modSubtitle"></p></div>
+<div class="tabs" id="moduleTabs">
+<div class="tab active" data-tab="theory">📖 Cours</div>
+<div class="tab" data-tab="play">🎮 Exercice</div>
+<div class="tab" data-tab="quiz">🧠 Quiz</div>
+</div>
+<div class="tab-content active" id="tab-theory"></div>
+<div class="tab-content" id="tab-play"></div>
+<div class="tab-content" id="tab-quiz"></div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ DONNÉES MODULES ============ */
+const MODULES = [
+{
+  id:'bubble', icon:'🫧', title:'Tri à bulles', desc:'Le tri le plus simple.', subtitle:'O(n²)',
+  theory:{
+    intro:'Le tri à bulles compare chaque paire voisine et échange si nécessaire.',
+    sections:[
+      {title:'Principe', content:'On compare tab[j] et tab[j+1] et on échange si tab[j] > tab[j+1].', list:['Comparer chaque paire voisine','Échanger si désordre','Répéter jusqu\'à ce que ce soit trié']}
+    ],
+    complexity:{best:'O(n)',avg:'O(n²)',worst:'O(n²)',space:'O(1)',stable:'Oui'},
+    pseudo:'pour i de 0 à n-2:\n  pour j de 0 à n-i-2:\n    si tab[j] > tab[j+1]:\n      échanger(tab[j], tab[j+1])'
+  },
+  quiz:[
+    {q:'Rôle d\'une passe ?', opts:['Trier tout le tableau','Placer le plus grand à droite','Inverser le tableau','Compter les éléments'], correct:1, expl:'À chaque passe, le plus grand élément remonte à droite.'},
+    {q:'Nombre de passes max ?', opts:['n','n-1','n²','log n'], correct:1, expl:'Après n-1 passes, tout est trié.'},
+    {q:'Avantage principal ?', opts:['Très rapide','Simple à comprendre','Peu de mémoire','Stable'], correct:1, expl:'C\'est surtout pédagogique.'},
+    {q:'Si deux voisins sont égaux ?', opts:['On échange','On n\'échange pas','On arrête','On supprime'], correct:1, expl:'Pas d\'échange : l\'algo est stable.'}
+  ]
+},
+{
+  id:'binary', icon:'🔍', title:'Recherche binaire', desc:'Divise pour régner.', subtitle:'O(log n)',
+  theory:{
+    intro:'Recherche dans un tableau trié en divisant l\'intervalle par 2 à chaque étape.',
+    sections:[
+      {title:'Principe', content:'On compare la cible au milieu, puis on va à gauche ou à droite.', list:['Tableau trié obligatoire','Comparer au milieu','Diviser l\'intervalle par 2']}
+    ],
+    complexity:{best:'O(1)',avg:'O(log n)',worst:'O(log n)',space:'O(1)',stable:'—'},
+    pseudo:'tant que bas <= haut:\n  milieu = (bas + haut) / 2\n  si tab[milieu] = cible: retourner milieu\n  sinon si tab[milieu] < cible: bas = milieu + 1\n  sinon: haut = milieu - 1'
+  },
+  quiz:[
+    {q:'Condition indispensable ?', opts:['Tableau trié','Tableau petit','Entiers seulement','Tableau vide'], correct:0, expl:'Sans tri, on ne peut pas diviser.'},
+    {q:'Essais max pour 1-1000 ?', opts:['10','100','500','1000'], correct:0, expl:'2^10 = 1024 > 1000.'},
+    {q:'Si tab[milieu] < cible ?', opts:['On va à gauche','On va à droite','On arrête','On relance'], correct:1, expl:'La cible est à droite.'},
+    {q:'Complexité ?', opts:['O(n)','O(n²)','O(log n)','O(1)'], correct:2, expl:'Division par 2 à chaque étape.'}
+  ]
+},
+{
+  id:'fibonacci', icon:'🌀', title:'Fibonacci', desc:'La suite célèbre.', subtitle:'F(n)=F(n-1)+F(n-2)',
+  theory:{
+    intro:'Chaque terme est la somme des deux précédents.',
+    sections:[
+      {title:'Principe', content:'F(0)=0, F(1)=1, puis F(n)=F(n-1)+F(n-2).', list:['F(0)=0','F(1)=1','Somme des deux précédents']}
+    ],
+    complexity:{best:'O(n)',avg:'O(n)',worst:'O(2ⁿ) récursif',space:'O(1)',stable:'—'},
+    pseudo:'si n <= 1: retourner n\na = 0 ; b = 1\npour i de 2 à n:\n  c = a + b\n  a = b\n  b = c\nretourner b'
+  },
+  quiz:[
+    {q:'F(7) ?', opts:['13','8','21','11'], correct:0, expl:'F(7)=13.'},
+    {q:'Complexité récursive naïve ?', opts:['O(n)','O(n²)','O(2ⁿ)','O(log n)'], correct:2, expl:'Exponentiel.'},
+    {q:'Comment améliorer ?', opts:['Un compteur','La mémoïsation','Des boucles','Python'], correct:1, expl:'Mémoïsation = stocker les résultats.'},
+    {q:'Où apparaît-elle ?', opts:['Maths','Nature/art/finance','Biologie','Nulle part'], correct:1, expl:'Partout dans la nature.'}
+  ]
+},
+{
+  id:'factorial', icon:'🔢', title:'Factorielle', desc:'Récursivité.', subtitle:'n! = n×(n-1)×...×1',
+  theory:{
+    intro:'Produit de 1 à n. Exemple classique de récursivité.',
+    sections:[
+      {title:'Récursivité', content:'Une fonction qui s\'appelle elle-même avec un problème plus petit.', list:['Cas de base obligatoire','Sinon stack overflow','0! = 1','Chaque appel réduit n']}
+    ],
+    complexity:{best:'O(n)',avg:'O(n)',worst:'O(n)',space:'O(n)',stable:'—'},
+    pseudo:'si n <= 1: retourner 1\nretourner n * factorielle(n-1)'
+  },
+  quiz:[
+    {q:'5! ?', opts:['25','120','60','15'], correct:1, expl:'5! = 120.'},
+    {q:'Sans cas de base ?', opts:['0','Stack overflow','Rapide','Itératif'], correct:1, expl:'Boucle infinie.'},
+    {q:'0! ?', opts:['0','1','Indéfini','Infini'], correct:1, expl:'Par convention 0! = 1.'},
+    {q:'Risque principal ?', opts:['Stack overflow','Illisible','Python','Lent pour n=1'], correct:0, expl:'La pile d\'appels explose.'}
+  ]
+},
+{
+  id:'quicksort', icon:'⚡', title:'Quicksort', desc:'Diviser pour régner.', subtitle:'O(n log n)',
+  theory:{
+    intro:'Choisir un pivot, partitionner, puis trier récursivement.',
+    sections:[
+      {title:'Principe', content:'Le pivot sépare les petits (gauche) et les grands (droite).', list:['Choisir un pivot','Partitionner autour du pivot','Placer le pivot','Récursion sur les deux côtés']},
+      {title:'Pire cas', content:'Pivot toujours min ou max → O(n²).'}
+    ],
+    complexity:{best:'O(n log n)',avg:'O(n log n)',worst:'O(n²)',space:'O(log n)',stable:'Non'},
+    pseudo:'partition(tab, bas, haut):\n  pivot = tab[haut]\n  i = bas - 1\n  pour j de bas à haut-1:\n    si tab[j] <= pivot:\n      i++ ; échanger(tab[i], tab[j])\n  échanger(tab[i+1], tab[haut])\n  retourner i+1'
+  },
+  quiz:[
+    {q:'Rôle du pivot ?', opts:['Trier','Référence de partition','Ralentir','Supprimer'], correct:1, expl:'Il sépare petits et grands.'},
+    {q:'Complexité moyenne ?', opts:['O(n)','O(n²)','O(n log n)','O(log n)'], correct:2, expl:'O(n log n).'},
+    {q:'Quand O(n²) ?', opts:['Petit tableau','Pivot min/max','Récursion','Jamais'], correct:1, expl:'Partitions déséquilibrées.'},
+    {q:'Pivot aléatoire ?', opts:['Code plus court','Évite le pire cas','Divise par 2','Supprime la récursion'], correct:1, expl:'Le pire cas devient improbable.'}
+  ]
+},
+{
+  id:'complexity', icon:'📊', title:'Big O', desc:'Complexité algorithmique.', subtitle:'Le langage des algos',
+  theory:{
+    intro:'Mesure le temps ou la mémoire en fonction de la taille n des données.',
+    sections:[
+      {title:'Complexités usuelles', content:'Du plus rapide au plus lent.', list:['O(1) constant','O(log n) logarithmique','O(n) linéaire','O(n log n) tri efficace','O(n²) quadratique','O(2ⁿ) exponentiel','O(n!) factoriel']},
+      {title:'Idée clé', content:'On garde le terme dominant : 3n² + 5n + 100 → O(n²).'}
+    ],
+    complexity:{best:'—',avg:'—',worst:'—',space:'—',stable:'—'},
+    pseudo:'O(1): tab[5]\nO(n): parcours de tab\nO(n²): double boucle\nO(log n): division par 2 à chaque étape'
+  },
+  quiz:[
+    {q:'Parcours simple ?', opts:['O(1)','O(log n)','O(n)','O(n²)'], correct:2, expl:'Linéaire.'},
+    {q:'5n² + 100n + 42 ?', opts:['O(n)','O(n²)','O(100n)','O(5n²)'], correct:1, expl:'Terme dominant.'},
+    {q:'Meilleur tri ?', opts:['Tri à bulles O(n²)','Quicksort O(n log n)','Recherche binaire O(log n)','O(n)'], correct:1, expl:'O(n log n).'},
+    {q:'O(2ⁿ) ?', opts:['Constant','Linéaire','Exponentiel','Logarithmique'], correct:2, expl:'Très lent.'}
+  ]
+}
+];
+
+/* ============ ÉTAT ============ */
+const STORAGE_KEY = 'algolearn_v1';
+let state = { modules:{}, points:0, badges:[] };
+
+function loadState(){
+  try{
+    const s = localStorage.getItem(STORAGE_KEY);
+    if(s){ const p = JSON.parse(s); state = Object.assign({modules:{},points:0,badges:[]}, p); }
+  }catch(e){ state = {modules:{},points:0,badges:[]}; }
+}
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+/* Progression : 33 théorie + 33 exercice + 34 quiz */
+function moduleProgress(id){
+  const m = state.modules[id];
+  if(!m) return 0;
+  let p = 0;
+  if(m.theory) p += 33;
+  if(m.play) p += 33;
+  if(m.quiz && (m.quiz.completed || m.quiz.score > 0)) p += 34;
+  return Math.min(p, 100);
+}
+function isCompleted(id){ return moduleProgress(id) >= 100; }
+
+/* ⚠️ DÉVERROUILLAGE PERMISSIF : dès que le module précédent a AU MOINS 1/3 */
+function isModuleUnlocked(idx){
+  if(idx === 0) return true;
+  return moduleProgress(MODULES[idx-1].id) > 0;
+}
+function unlockAll(){
+  MODULES.forEach(m => {
+    state.modules[m.id] = { theory:true, play:true, quiz:{score:4,total:4,completed:true} };
+  });
+  saveState(); renderHome(); showToast('🔓 Tous les modules débloqués');
+}
+
+/* ============ POINTS / BADGES ============ */
+function addPoints(n, reason){
+  state.points += n;
+  saveState(); updateHeader();
+  showToast('+' + n + ' pts — ' + reason);
+}
+const BADGES = [
+  {id:'first_step', label:'🥇 Premier pas',    cond:()=>state.points >= 10},
+  {id:'bubble_master', label:'🫧 Maître bulles', cond:()=>isCompleted('bubble')},
+  {id:'search_master', label:'🔍 Limier',       cond:()=>isCompleted('binary')},
+  {id:'fib_master', label:'🌀 Fibonacci',       cond:()=>isCompleted('fibonacci')},
+  {id:'rec_master', label:'🔢 Récursif',        cond:()=>isCompleted('factorial')},
+  {id:'quick_master', label:'⚡ Éclair',         cond:()=>isCompleted('quicksort')},
+  {id:'bigO_master', label:'📊 Big O',          cond:()=>isCompleted('complexity')},
+  {id:'all_done', label:'👑 Accompli',          cond:()=>MODULES.every(m => isCompleted(m.id))}
+];
+function checkBadges(){
+  BADGES.forEach(b => {
+    if(!state.badges.includes(b.id) && b.cond()){
+      state.badges.push(b.id);
+      saveState();
+      showToast('🏆 Badge : ' + b.label);
+    }
+  });
+  updateHeader();
+}
+
+/* ============ UI ============ */
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+function updateHeader(){
+  document.getElementById('hdrPoints').textContent = state.points;
+  document.getElementById('hdrBadges').textContent = state.badges.length;
+  document.getElementById('hdrModules').textContent = MODULES.filter(m => isCompleted(m.id)).length;
+}
+function showView(name){
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function goHome(){ renderHome(); showView('home'); }
+
+function renderHome(){
+  const grid = document.getElementById('modulesGrid');
+  grid.innerHTML = '';
+  MODULES.forEach((mod, idx) => {
+    const unlocked = isModuleUnlocked(idx);
+    const done = isCompleted(mod.id);
+    const prog = moduleProgress(mod.id);
+    const card = document.createElement('div');
+    card.className = 'module-card' + (unlocked?'':' locked') + (done?' completed':'');
+    card.innerHTML =
+      '<div class="mod-icon">' + mod.icon + '</div>' +
+      '<h3>' + mod.title + '</h3>' +
+      '<div class="mod-desc">' + mod.desc + '</div>' +
+      '<span class="mod-badge ' + (done?'done':(unlocked?'todo':'locked')) + '">' +
+        (done?'✓ Terminé':(unlocked?'▶ Disponible':'🔒 Verrouillé')) +
+      '</span>' +
+      (unlocked
+        ? '<div class="mod-progress"><div class="mod-progress-bar" style="width:'+prog+'%"></div></div>'
+        : '<div class="lock-overlay">🔒</div>');
+    if(unlocked) card.addEventListener('click', () => openModule(mod.id));
+    grid.appendChild(card);
+  });
+
+  const total = MODULES.length * 100;
+  const current = MODULES.reduce((s,m) => s + moduleProgress(m.id), 0);
+  const pct = Math.round((current / total) * 100);
+  document.getElementById('bigProgressLabel').textContent = pct + '% complété';
+  document.getElementById('bigProgressPoints').textContent = state.points + ' points';
+  document.getElementById('bigProgressFill').style.width = pct + '%';
+
+  const row = document.getElementById('badgesRow');
+  row.innerHTML = '';
+  BADGES.forEach(b => {
+    const earned = state.badges.includes(b.id);
+    const el = document.createElement('div');
+    el.className = 'badge-item' + (earned?' earned':'');
+    el.textContent = (earned?'':'🔒 ') + b.label;
+    row.appendChild(el);
+  });
+
+  updateHeader();
+  checkBadges();
+}
+
+/* ============ MODULE ============ */
+let currentMod = null;
+function openModule(id){
+  currentMod = MODULES.find(m => m.id === id);
+  if(!currentMod) return;
+  document.getElementById('modTitle').textContent = currentMod.icon + ' ' + currentMod.title;
+  document.getElementById('modSubtitle').textContent = currentMod.subtitle;
+
+  document.querySelectorAll('#moduleTabs .tab').forEach((t, i) => {
+    t.classList.toggle('active', i === 0);
+    t.onclick = () => {
+      document.querySelectorAll('#moduleTabs .tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      document.querySelectorAll('#tab-theory, #tab-play, #tab-quiz').forEach(c => c.classList.remove('active'));
+      document.getElementById('tab-' + t.dataset.tab).classList.add('active');
+    };
+  });
+  document.querySelectorAll('.tab-content').forEach((c, i) => c.classList.toggle('active', i === 0));
+
+  renderTheory();
+  renderPlayground();
+  renderQuiz();
+  showView('module');
+}
+
+/* ============ COURS ============ */
+function renderTheory(){
+  const t = document.getElementById('tab-theory');
+  const m = currentMod;
+  const th = m.theory;
+  let html = '<div class="theory-box"><p>' + th.intro + '</p></div>';
+  th.sections.forEach(sec => {
+    html += '<div class="theory-box"><h3>' + sec.title + '</h3><p>' + sec.content + '</p>';
+    if(sec.list) html += '<ul>' + sec.list.map(l => '<li>' + l + '</li>').join('') + '</ul>';
+    html += '</div>';
+  });
+  if(th.complexity){
+    html += '<div class="theory-box"><h3>📐 Complexité</h3><div class="complexity-grid">' +
+      ['best','avg','worst','space','stable'].map(k =>
+        '<div class="complexity-card"><div class="lbl">' + k + '</div><div class="val">' + th.complexity[k] + '</div></div>'
+      ).join('') + '</div></div>';
+  }
+  html += '<div class="theory-box"><h3>💻 Pseudo-code</h3><div class="pseudo-code">' + th.pseudo + '</div></div>';
+  html += '<div style="text-align:center;margin-top:18px"><button id="theoryDoneBtn">✅ J\'ai compris</button></div>';
+  t.innerHTML = html;
+
+  document.getElementById('theoryDoneBtn').onclick = () => {
+    if(!state.modules[m.id]) state.modules[m.id] = {};
+    if(!state.modules[m.id].theory){
+            state.modules[m.id].theory = true;
+      addPoints(5, 'Cours lu');
+      saveState();
+      renderHome(); // rafraîchit la grille tout de suite
+    }
+    showToast('✅ Cours validé');
+    document.querySelector('[data-tab="play"]').click();
+  };
+}
+
+/* ============ EXERCICES ============ */
+function renderPlayground(){
+  const play = document.getElementById('tab-play');
+  const id = currentMod.id;
+  if(id === 'bubble')     return playgroundBubble(play);
+  if(id === 'binary')     return playgroundBinary(play);
+  if(id === 'fibonacci')  return playgroundFib(play);
+  if(id === 'factorial')  return playgroundFactorial(play);
+  if(id === 'quicksort')  return playgroundQuick(play);
+  if(id === 'complexity') return playgroundComplexity(play);
+}
+
+/* --- Tri à bulles --- */
+function playgroundBubble(play){
+  play.innerHTML =
+    '<div class="playground">' +
+      '<h3 style="color:#f0abfc;margin-bottom:10px">🎮 Trie le tableau [42,17,93,8,55,21]</h3>' +
+      '<div class="bars" id="bubbleBars"></div>' +
+      '<div class="explain" id="bubbleExplain">Clique sur Démarrer.</div>' +
+      '<div class="playground-controls">' +
+        '<button id="bubbleStart">▶ Démarrer</button>' +
+        '<button id="bubbleStep" class="sec" disabled>⏭ Pas suivant</button>' +
+        '<button id="bubbleReset" class="sec">↺ Recommencer</button>' +
+      '</div>' +
+    '</div>';
+  let arr=[], i=0, j=0, sorted=false, started=false;
+  const barsEl = document.getElementById('bubbleBars');
+  const explainEl = document.getElementById('bubbleExplain');
+  const startBtn = document.getElementById('bubbleStart');
+  const stepBtn = document.getElementById('bubbleStep');
+  const resetBtn = document.getElementById('bubbleReset');
+
+  function renderBars(){
+    barsEl.innerHTML = '';
+    const max = Math.max(...arr, 1);
+    arr.forEach((v, idx) => {
+      const bar = document.createElement('div');
+      bar.className = 'bar';
+      if(sorted) bar.classList.add('sorted');
+      else if(idx === j || idx === j+1) bar.classList.add('cmp');
+      bar.style.height = ((v/max)*100 + 10) + 'px';
+      bar.textContent = v;
+      barsEl.appendChild(bar);
+    });
+  }
+  function reset(){
+    arr = [42,17,93,8,55,21]; i=0; j=0; sorted=false; started=false;
+    renderBars();
+    explainEl.textContent = 'Tableau initial. Clique sur Démarrer.';
+    startBtn.disabled = false; stepBtn.disabled = true;
+  }
+  function start(){
+    started = true; startBtn.disabled = true; stepBtn.disabled = false;
+    explainEl.innerHTML = '<span class="key">Passe 1</span>';
+  }
+  function step(){
+    if(!started || sorted) return;
+    const n = arr.length;
+    if(j >= n-1-i){
+      i++; j=0;
+      if(i >= n-1){
+        sorted = true; renderBars();
+        explainEl.innerHTML = '<span class="ok">✅ Tableau trié !</span>';
+        stepBtn.disabled = true;
+        if(!state.modules['bubble']) state.modules['bubble'] = {};
+        if(!state.modules['bubble'].play){
+          state.modules['bubble'].play = true;
+          addPoints(10, 'Exercice tri à bulles terminé');
+          saveState(); renderHome();
+        }
+        return;
+      }
+      explainEl.innerHTML = '<span class="key">Passe ' + (i+1) + '</span>';
+      renderBars(); return;
+    }
+    const a = arr[j], b = arr[j+1];
+    if(a > b){
+      [arr[j], arr[j+1]] = [arr[j+1], arr[j]];
+      explainEl.innerHTML = '<span class="warn">' + a + ' > ' + b + ' → échange</span>';
+    }else{
+      explainEl.innerHTML = '<span class="ok">' + a + ' ≤ ' + b + ' → pas d\'échange</span>';
+    }
+    j++; renderBars();
+  }
+  startBtn.onclick = start;
+  stepBtn.onclick = step;
+  resetBtn.onclick = reset;
+  reset();
+}
+
+/* --- Recherche binaire --- */
+function playgroundBinary(play){
+  play.innerHTML =
+    '<div class="playground">' +
+      '<h3 style="color:#f0abfc;margin-bottom:10px">🎮 Devine le nombre (1-100)</h3>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">' +
+        '<div class="stat-chip">Essais : <b id="rbAttempts">0</b></div>' +
+        '<div class="stat-chip">Optimal : <b>≤ 7</b></div>' +
+        '<div class="stat-chip">Intervalle : <b id="rbRange">1–100</b></div>' +
+      '</div>' +
+      '<div class="range-bar"><div class="range-active" id="rbBar" style="left:0%;width:100%">1 → 100</div></div>' +
+      '<div class="input-row">' +
+        '<input type="number" id="rbInput" min="1" max="100" placeholder="Ton nombre...">' +
+        '<button id="rbGuess">Proposer</button>' +
+      '</div>' +
+      '<div class="explain" id="rbExplain">Propose le milieu !</div>' +
+      '<button id="rbReset" class="sec">↺ Nouveau nombre</button>' +
+    '</div>';
+  let secret, low, high, tries;
+  const inp = document.getElementById('rbInput');
+  const guessBtn = document.getElementById('rbGuess');
+  const resetBtn = document.getElementById('rbReset');
+  const exEl = document.getElementById('rbExplain');
+  const attEl = document.getElementById('rbAttempts');
+  const rangeEl = document.getElementById('rbRange');
+  const barEl = document.getElementById('rbBar');
+
+  function updateBar(){
+    const left = ((low-1)/100)*100;
+    const width = ((high-low+1)/100)*100;
+    barEl.style.left = left + '%';
+    barEl.style.width = width + '%';
+    barEl.textContent = low + ' → ' + high;
+  }
+  function init(){
+    secret = Math.floor(Math.random()*100)+1;
+    low = 1; high = 100; tries = 0;
+    inp.value = ''; inp.disabled = false; guessBtn.disabled = false;
+    attEl.textContent = '0'; rangeEl.textContent = '1–100';
+    updateBar();
+    exEl.innerHTML = 'Nouveau nombre secret.';
+  }
+  function guess(){
+    const v = parseInt(inp.value);
+    if(isNaN(v) || v < 1 || v > 100){
+      exEl.innerHTML = '<span class="warn">⛔ Nombre entre 1 et 100 requis</span>'; return;
+    }
+    tries++; attEl.textContent = tries;
+    if(v === secret){
+      exEl.innerHTML = '<span class="ok">🎉 Trouvé en ' + tries + ' essai(s) !</span>';
+      inp.disabled = true; guessBtn.disabled = true;
+      if(!state.modules['binary']) state.modules['binary'] = {};
+      if(!state.modules['binary'].play){
+        state.modules['binary'].play = true;
+        addPoints(10, 'Recherche binaire maîtrisée');
+        saveState(); renderHome();
+      }
+      return;
+    }
+    if(v < secret){
+      low = Math.max(low, v+1);
+      exEl.innerHTML = '<span class="key">' + v + ' trop petit.</span> La cible est dans [' + (v+1) + ', ' + high + '].';
+    }else{
+      high = Math.min(high, v-1);
+      exEl.innerHTML = '<span class="key">' + v + ' trop grand.</span> La cible est dans [' + low + ', ' + (v-1) + '].';
+    }
+    rangeEl.textContent = low + '–' + high;
+    updateBar();
+    const mid = Math.floor((low+high)/2);
+    exEl.innerHTML += '<br><span style="color:#34d399">💡 Prochain essai : <strong>' + mid + '</strong></span>';
+    inp.value = ''; inp.focus();
+  }
+  guessBtn.onclick = guess;
+  inp.addEventListener('keypress', e => { if(e.key === 'Enter') guess(); });
+  resetBtn.onclick = init;
+  init();
+}
+
+/* --- Fibonacci --- */
+function playgroundFib(play){
+  play.innerHTML =
+    '<div class="playground">' +
+      '<h3 style="color:#f0abfc;margin-bottom:10px">🎮 Construis Fibonacci</h3>' +
+      '<div class="formula" id="fibFormula">F(?) = F(?) + F(?)</div>' +
+      '<div class="fib-row" id="fibRow"></div>' +
+      '<div class="explain" id="fibExplain">Clique pour ajouter le prochain terme.</div>' +
+      '<div class="playground-controls">' +
+        '<button id="fibNext">➕ Prochain terme</button>' +
+        '<button id="fibReset" class="sec">↺ Réinitialiser</button>' +
+      '</div>' +
+    '</div>';
+  let seq = [0,1];
+  const rowEl = document.getElementById('fibRow');
+  const formulaEl = document.getElementById('fibFormula');
+  const explainEl = document.getElementById('fibExplain');
+
+  function render(newIdx = -1){
+    rowEl.innerHTML = '';
+    seq.forEach((v, i) => {
+      const box = document.createElement('div');
+      box.className = 'fib-box';
+      if(i === newIdx) box.classList.add('new');
+      if(i === newIdx-1) box.classList.add('op1');
+      if(i === newIdx-2) box.classList.add('op2');
+      box.textContent = v;
+      rowEl.appendChild(box);
+    });
+    const n = seq.length;
+    if(n >= 3){
+      formulaEl.innerHTML = 'F(' + (n-1) + ') = F(' + (n-2) + ') + F(' + (n-3) + ') = ' +
+        '<span style="color:#10b981">' + seq[n-2] + '</span> + ' +
+        '<span style="color:#60a5fa">' + seq[n-3] + '</span> = ' +
+        '<span style="color:#fbbf24">' + seq[n-1] + '</span>';
+    }else{
+      formulaEl.innerHTML = 'F(?) = F(?) + F(?)';
+    }
+  }
+  function next(){
+    const n = seq.length;
+    const nv = seq[n-1] + seq[n-2];
+    seq.push(nv);
+    render(n);
+    explainEl.innerHTML = '<span class="key">On additionne</span> ' + seq[n-2] + ' + ' + seq[n-1] + ' = ' + nv + '.';
+    if(seq.length >= 8 && (!state.modules['fibonacci'] || !state.modules['fibonacci'].play)){
+      if(!state.modules['fibonacci']) state.modules['fibonacci'] = {};
+      state.modules['fibonacci'].play = true;
+      addPoints(10, 'Fibonacci maîtrisé');
+      saveState(); renderHome();
+    }
+  }
+  function reset(){ seq = [0,1]; render(); explainEl.textContent = 'Suite initialisée : F(0)=0, F(1)=1.'; }
+  document.getElementById('fibNext').onclick = next;
+  document.getElementById('fibReset').onclick = reset;
+  render();
+}
+
+/* --- Factorielle --- */
+function playgroundFactorial(play){
+  play.innerHTML =
+    '<div class="playground">' +
+      '<h3 style="color:#f0abfc;margin-bottom:10px">🎮 Calcule une factorielle</h3>' +
+      '<div class="input-row">' +
+        '<input type="number" id="factInput" min="0" max="12" value="5">' +
+        '<button id="factBtn">Calculer n!</button>' +
+      '</div>' +
+      '<div class="explain" id="factExplain">Entre un nombre et clique sur Calculer.</div>' +
+      '<div id="factSteps" style="margin-top:12px"></div>' +
+    '</div>';
+  const inp = document.getElementById('factInput');
+  const btn = document.getElementById('factBtn');
+  const exEl = document.getElementById('factExplain');
+  const stepsEl = document.getElementById('factSteps');
+
+  btn.onclick = () => {
+    const n = parseInt(inp.value);
+    if(isNaN(n) || n < 0 || n > 12){
+      exEl.innerHTML = '<span class="warn">⛔ Nombre entre 0 et 12</span>'; return;
+    }
+    let result = 1;
+    const steps = [];
+    for(let i = n; i >= 1; i--){ result *= i; steps.push(i + (i>1?' × ':'')); }
+    exEl.innerHTML = '<span class="ok">' + n + '! = ' + result + '</span>';
+    stepsEl.innerHTML =
+      '<div style="background:#0a0618;padding:14px;border-radius:10px;font-family:monospace">' +
+        '<div style="color:#a78bfa;margin-bottom:6px">Détail :</div>' +
+        '<div style="color:#fbbf24;font-size:1rem">' +
+          (n === 0 ? '0! = 1 (par convention)' : steps.join('') + ' = <strong style="color:#10b981">' + result + '</strong>') +
+        '</div>' +
+      '</div>';
+    if(!state.modules['factorial']) state.modules['factorial'] = {};
+    if(!state.modules['factorial'].play){
+      state.modules['factorial'].play = true;
+      addPoints(10, 'Factorielle comprise');
+      saveState(); renderHome();
+    }
+  };
+  btn.click();
+}
+
+/* --- Quicksort (une partition) --- */
+function playgroundQuick(play){
+  play.innerHTML =
+    '<div class="playground">' +
+      '<h3 style="color:#f0abfc;margin-bottom:10px">🎮 Une partition de Quicksort</h3>' +
+      '<p style="color:#a78bfa;margin-bottom:10px">Tableau : [7,2,9,4,1,8,3,6] — pivot = <strong style="color:#f87171">6</strong></p>' +
+      '<div class="bars" id="quickBars"></div>' +
+      '<div class="explain" id="quickExplain">Clique sur Étape pour partitionner.</div>' +
+      '<div class="playground-controls">' +
+        '<button id="quickStep" class="sec">⏭ Étape</button>' +
+        '<button id="quickReset" class="sec">↺ Recommencer</button>' +
+      '</div>' +
+    '</div>';
+  let arr = [7,2,9,4,1,8,3,6];
+  let i = -1, j = 0, done = false;
+  const pivot = 6;
+  const barsEl = document.getElementById('quickBars');
+  const exEl = document.getElementById('quickExplain');
+
+  function render(){
+    barsEl.innerHTML = '';
+    const max = Math.max(...arr);
+    arr.forEach((v, idx) => {
+      const bar = document.createElement('div');
+      bar.className = 'bar';
+      if(v === pivot && !done) bar.classList.add('pivot');
+      if(idx === j && !done) bar.classList.add('cmp');
+      if(done && idx <= i) bar.classList.add('sorted');
+      bar.style.height = ((v/max)*100 + 10) + 'px';
+      bar.textContent = v;
+      barsEl.appendChild(bar);
+    });
+  }
+  function step(){
+    if(done) return;
+    if(j >= arr.length-1){
+      [arr[i+1], arr[arr.length-1]] = [arr[arr.length-1], arr[i+1]];
+      done = true; render();
+      exEl.innerHTML = '<span class="ok">✅ Partition terminée !</span> Le pivot 6 est à sa place (index ' + (i+1) + ').';
+      if(!state.modules['quicksort']) state.modules['quicksort'] = {};
+      if(!state.modules['quicksort'].play){
+        state.modules['quicksort'].play = true;
+        addPoints(10, 'Quicksort compris');
+        saveState(); renderHome();
+      }
+      return;
+    }
+    const v = arr[j];
+    if(v <= pivot){
+      i++;
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      exEl.innerHTML = '<span class="key">' + v + ' ≤ ' + pivot + '</span> → à gauche (i=' + i + ').';
+    }else{
+      exEl.innerHTML = '<span class="key">' + v + ' > ' + pivot + '</span> → à droite.';
+    }
+    j++; render();
+  }
+  function reset(){
+    arr = [7,2,9,4,1,8,3,6]; i = -1; j = 0; done = false;
+    render(); exEl.textContent = 'Prêt. On parcourt en plaçant les petits à gauche.';
+  }
+  document.getElementById('quickStep').onclick = step;
+  document.getElementById('quickReset').onclick = reset;
+  render();
+}
+
+/* --- Complexité --- */
+function playgroundComplexity(play){
+  play.innerHTML =
+    '<div class="playground">' +
+      '<h3 style="color:#f0abfc;margin-bottom:10px">🎮 Compare les complexités</h3>' +
+      '<div class="input-row">' +
+        '<input type="number" id="cxN" value="100" min="1" max="10000">' +
+        '<button id="cxBtn">Comparer</button>' +
+      '</div>' +
+      '<div class="explain" id="cxExplain">Entre n et clique.</div>' +
+      '<div id="cxResults" style="margin-top:12px"></div>' +
+    '</div>';
+  const inp = document.getElementById('cxN');
+  const btn = document.getElementById('cxBtn');
+  const exEl = document.getElementById('cxExplain');
+  const resEl = document.getElementById('cxResults');
+
+  btn.onclick = () => {
+    const n = parseInt(inp.value);
+    if(isNaN(n) || n < 1) return;
+    const results = [
+      {name:'O(1)',       val:1,                          note:'Accès direct'},
+      {name:'O(log n)',   val:Math.ceil(Math.log2(n)),    note:'Recherche binaire'},
+      {name:'O(n)',       val:n,                          note:'Parcours'},
+      {name:'O(n log n)', val:Math.ceil(n*Math.log2(n)),  note:'Quicksort'},
+      {name:'O(n²)',      val:n*n,                        note:'Tri à bulles'},
+      {name:'O(2ⁿ)',      val:n <= 20 ? Math.pow(2,n) : '∞', note:'Fibonacci récursif'}
+    ];
+    exEl.innerHTML = '<span class="key">Pour n = ' + n + '</span>';
+    resEl.innerHTML =
+      '<table class="algo-table"><tr><th>Complexité</th><th>Opérations</th><th>Exemple</th></tr>' +
+      results.map(r =>
+        '<tr><td><strong style="color:#fbbf24">' + r.name + '</strong></td><td>' +
+        (typeof r.val === 'number' ? r.val.toLocaleString('fr-FR') : r.val) +
+        '</td><td style="color:#a78bfa">' + r.note + '</td></tr>'
+      ).join('') + '</table>';
+    if(!state.modules['complexity']) state.modules['complexity'] = {};
+    if(!state.modules['complexity'].play){
+      state.modules['complexity'].play = true;
+      addPoints(10, 'Big O compris');
+      saveState(); renderHome();
+    }
+  };
+  btn.click();
+}
+
+/* ============ QUIZ ============ */
+function renderQuiz(){
+  const m = currentMod;
+  const quiz = m.quiz;
+  const container = document.getElementById('tab-quiz');
+  let idx = 0;
+  let score = 0;
+
+  function renderQuestion(){
+    if(idx >= quiz.length) return renderResult();
+    const q = quiz[idx];
+    container.innerHTML =
+      '<div class="quiz-container">' +
+        '<div class="quiz-header"><h3>🧠 Question ' + (idx+1) + '/' + quiz.length + '</h3>' +
+          '<div class="quiz-progress">Score : ' + score + '</div></div>' +
+        '<div class="quiz-question">' + q.q + '</div>' +
+        '<div id="opts"></div>' +
+        '<div class="quiz-feedback" id="feedback"></div>' +
+        '<div class="quiz-actions" id="actions"></div>' +
+      '</div>';
+    const optsEl = document.getElementById('opts');
+    q.opts.forEach((opt, oi) => {
+      const b = document.createElement('button');
+      b.className = 'quiz-option';
+      b.textContent = opt;
+      b.onclick = () => selectAnswer(oi);
+      optsEl.appendChild(b);
+    });
+  }
+  function selectAnswer(oi){
+    const q = quiz[idx];
+    const btns = document.querySelectorAll('#opts .quiz-option');
+    btns.forEach(b => b.disabled = true);
+    btns[oi].classList.add(oi === q.correct ? 'correct' : 'wrong');
+    btns[q.correct].classList.add('correct');
+    const fb = document.getElementById('feedback');
+    if(oi === q.correct){
+      score++;
+      fb.className = 'quiz-feedback show good';
+      fb.textContent = '✅ Bonne réponse ! ' + q.expl;
+    }else{
+      fb.className = 'quiz-feedback show bad';
+      fb.textContent = '❌ Raté. Bonne réponse : "' + q.opts[q.correct] + '". ' + q.expl;
+    }
+    const actions = document.getElementById('actions');
+    const nextBtn = document.createElement('button');
+    nextBtn.textContent = idx < quiz.length-1 ? 'Question suivante →' : 'Voir le résultat';
+    nextBtn.onclick = () => { idx++; renderQuestion(); };
+    actions.appendChild(nextBtn);
+  }
+  function renderResult(){
+    const pct = Math.round((score/quiz.length)*100);
+    const passed = pct >= 75;
+    if(!state.modules[m.id]) state.modules[m.id] = {};
+    const prev = state.modules[m.id].quiz || {score:0};
+    state.modules[m.id].quiz = {
+      score: Math.max(prev.score || 0, score),
+      total: quiz.length,
+      completed: (prev.completed === true) || passed
+    };
+    saveState();
+    if(passed && !state.modules[m.id]._quizPointsGiven){
+      state.modules[m.id]._quizPointsGiven = true;
+      addPoints(20, 'Quiz ' + m.title + ' réussi');
+    }
+    container.innerHTML =
+      '<div class="quiz-container"><div class="quiz-result">' +
+        '<div class="score-big">' + score + '/' + quiz.length + '</div>' +
+        '<div class="msg">' + (passed
+          ? '🎉 Bravo, tu maîtrises <strong>' + m.title + '</strong> !'
+          : '💪 Révise encore le cours.') + '</div>' +
+        '<div style="margin-top:18px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">' +
+          '<button id="retryQuiz">↺ Refaire</button>' +
+          '<button class="sec" id="backToCourse">📖 Revoir</button>' +
+          '<button class="sec" id="backHomeBtn">🏠 Accueil</button>' +
+        '</div>' +
+      '</div></div>';
+    document.getElementById('retryQuiz').onclick = () => { idx = 0; score = 0; renderQuestion(); };
+    document.getElementById('backToCourse').onclick = () => document.querySelector('[data-tab="theory"]').click();
+    document.getElementById('backHomeBtn').onclick = goHome;
+    checkBadges();
+    renderHome();
+  }
+  renderQuestion();
+}
+
+/* ============ INIT ============ */
+loadState();
+renderHome();
+updateHeader();
+</script>
+</body>
+</html>
